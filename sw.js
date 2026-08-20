@@ -23,7 +23,7 @@ self.addEventListener("fetch", (e) => {
   if (url.origin !== location.origin || e.request.method !== "GET") return; // API calls etc. go straight to network
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then((cached) => {
-      const refresh = fetch(e.request)
+      const refresh = fetch(e.request, { cache: "no-cache" }) // revalidate past the Pages CDN's 10-min cache
         .then((res) => {
           if (res && res.ok) {
             const copy = res.clone();
