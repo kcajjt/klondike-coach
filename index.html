@@ -17191,7 +17191,7 @@ const SUITS = ["♠", "♥", "♦", "♣"];
 const RED = { "♥": true, "♦": true };
 const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 const cardName = (c) => `${RANKS[c.rank - 1]}${c.suit}`;
-const BUILD = "v48";
+const BUILD = "v49";
 // ---------- Persistence adapter ----------
 // Replaces the Claude-artifact-only window.storage with plain localStorage.
 // Same async shape as the old API: get(key) -> { value } | null, set(key, value).
@@ -18460,6 +18460,7 @@ function SolitaireCoach() {
     const [initialDeal, setInitialDeal] = useState(null);
     const [moveLog, setMoveLog] = useState([]);
     const [history, setHistory] = useState([]);
+    const historyRef = useRef([]); // authoritative undo stack — state only drives the button
     const [seconds, setSeconds] = useState(0);
     const [started, setStarted] = useState(false);
     const [won, setWon] = useState(false);
@@ -18737,7 +18738,14 @@ function SolitaireCoach() {
         boardLog.current.push(compactState(g));
     }
     function pushHistory() {
-        setHistory((h) => [...h.slice(-60), clone(gameRef.current)]);
+        // Snapshot NOW. The old version cloned gameRef.current inside the deferred
+        // setState updater — by then the move had already committed, so the top of
+        // the stack could equal the post-move board. First undo tap then "restored"
+        // the present (visible no-op), was still logged, and the analyzer's replay
+        // rewound one move too many (ghost-undo divergence, found 8/20).
+        const snap = clone(gameRef.current);
+        historyRef.current = [...historyRef.current.slice(-60), snap];
+        setHistory(historyRef.current);
     }
     function begin() {
         if (!started)
@@ -18904,16 +18912,16 @@ function SolitaireCoach() {
         }
     }
     function undo() {
-        setHistory((h) => {
-            if (!h.length)
-                return h;
-            const prev = h[h.length - 1];
-            pushBoard(gameRef.current);
-            gameRef.current = prev;
-            setGame(prev);
-            setMoveLog((l) => [...l, "Undo"]);
-            return h.slice(0, -1);
-        });
+        const h = historyRef.current;
+        if (!h.length)
+            return;
+        const prev = h[h.length - 1];
+        historyRef.current = h.slice(0, -1);
+        setHistory(historyRef.current);
+        pushBoard(gameRef.current);
+        gameRef.current = prev;
+        setGame(prev);
+        setMoveLog((l) => [...l, "Undo"]);
     }
     // ---------- Win / auto-complete ----------
     const allUp = game.stock.length === 0 &&
@@ -19239,6 +19247,7 @@ Reply ONLY JSON, plain language for a phone:
             setMoveLog((l) => l.slice(0, uptoMove - 1));
             boardLog.current = boardLog.current.slice(0, uptoMove - 1);
             setHistory([]);
+            historyRef.current = [];
             setWon(false);
             setReview(null);
             setAnalysis(null);
@@ -19342,6 +19351,7 @@ TOPIC the player opened chat about: ${topic}`;
         setAnalysis(s.analysis);
         setReview(s.review);
         setHistory([]);
+        historyRef.current = [];
         setReplayGuide(null);
         dealtAt.current = Date.now();
     }
@@ -19497,6 +19507,7 @@ TOPIC the player opened chat about: ${topic}`;
         snapshotInitial(g);
         setMoveLog([]);
         setHistory([]);
+        historyRef.current = [];
         boardLog.current = [];
         setSeconds(0);
         setStarted(false);
