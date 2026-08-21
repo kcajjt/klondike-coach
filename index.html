@@ -17191,7 +17191,7 @@ const SUITS = ["♠", "♥", "♦", "♣"];
 const RED = { "♥": true, "♦": true };
 const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 const cardName = (c) => `${RANKS[c.rank - 1]}${c.suit}`;
-const BUILD = "v53";
+const BUILD = "v54";
 // ---------- Persistence adapter ----------
 // Replaces the Claude-artifact-only window.storage with plain localStorage.
 // Same async shape as the old API: get(key) -> { value } | null, set(key, value).
@@ -18024,6 +18024,9 @@ function makeVerifiedDeal(maxTries = 25) {
     return { ...deal(), verified: false };
 }
 const clone = (s) => JSON.parse(JSON.stringify(s));
+// Training-mode drill pack: Thomas's real proven-death games, restored to the
+// move just before the killer. Generated 8/21 from saved reports.
+const DRILLS = [{ "label": "Drill 1: died move 68 — Drew past the win", "t": "2♥ | 10♦ 6♥ | 8♣ Q♣ K♦ | 6♣ K♠ 9♦ 10♥ | Q♥ 6♠ 4♣ K♥ 8♦ | 3♣ 10♣ Q♦ 4♥ K♣ 2♦ | Q♠ J♥ J♦ A♥ 7♠ 5♣ 4♦", "s": "8♠ 10♠ 3♥ 9♣ A♠ 7♦ 9♠ 5♥ 2♠ 3♦ 9♥ 7♣ 5♦ A♣ 4♠ A♦ 3♠ 6♦ 7♥ 8♥ J♣ 2♣ J♠ 5♠", "m": ["Drew 3: 5♠ J♠ 2♣ (top: 2♣)", "Drew 3: J♣ 8♥ 7♥ (top: 7♥)", "Drew 3: 6♦ 3♠ A♦ (top: A♦)", "A♦ → foundation", "2♦ → foundation — revealed K♣ on column 6", "3♠ from waste → column 7", "2♥ from column 1 → column 7", "K♣ from column 6 → column 1 — revealed 4♥ on column 6", "Drew 3: 4♠ A♣ 5♦ (top: 5♦)", "Drew 3: 7♣ 9♥ 3♦ (top: 3♦)", "3♦ → foundation", "Drew 3: 2♠ 5♥ 9♠ (top: 9♠)", "9♠ from waste → column 4", "8♦ from column 5 → column 4 — revealed K♥ on column 5", "Drew 3: 7♦ A♠ 9♣ (top: 9♣)", "Drew 3: 3♥ 10♠ 8♠ (top: 8♠)", "Recycled waste back to stock (pass 2)", "Drew 3: 5♠ J♠ 2♣ (top: 2♣)", "Drew 3: J♣ 8♥ 7♥ (top: 7♥)", "Drew 3: 6♦ 4♠ A♣ (top: A♣)", "A♣ → foundation", "Drew 3: 5♦ 7♣ 9♥ (top: 9♥)", "Drew 3: 2♠ 5♥ 7♦ (top: 7♦)", "Drew 3: A♠ 9♣ 3♥ (top: 3♥)", "Drew 2: 10♠ 8♠ (top: 8♠)", "Recycled waste back to stock (pass 3)", "Drew 3: 5♠ J♠ 2♣ (top: 2♣)", "2♣ → foundation", "Drew 3: J♣ 8♥ 7♥ (top: 7♥)", "Drew 3: 6♦ 4♠ 5♦ (top: 5♦)", "Drew 3: 7♣ 9♥ 2♠ (top: 2♠)", "Drew 3: 5♥ 7♦ A♠ (top: A♠)", "A♠ → foundation", "Drew 3: 9♣ 3♥ 10♠ (top: 10♠)", "Drew 1: 8♠ (top: 8♠)", "Recycled waste back to stock (pass 4)", "Drew 3: 5♠ J♠ J♣ (top: J♣)", "Drew 3: 8♥ 7♥ 6♦ (top: 6♦)", "Drew 3: 4♠ 5♦ 7♣ (top: 7♣)", "7♣ from waste → column 4", "6♥ from column 2 → column 4 — revealed 10♦ on column 2", "Drew 3: 9♥ 2♠ 5♥ (top: 5♥)", "Undo", "3♠ 2♥ from column 7 → column 6", "4♦ → foundation — revealed 5♣ on column 7", "4♥ 3♠ 2♥ from column 6 → column 7 — revealed Q♦ on column 6", "Q♦ from column 6 → column 1 — revealed 10♣ on column 6", "Drew 3: 9♥ 2♠ 5♥ (top: 5♥)", "Drew 3: 7♦ 9♣ 3♥ (top: 3♥)", "Drew 2: 10♠ 8♠ (top: 8♠)", "Recycled waste back to stock (pass 5)", "Drew 3: 5♠ J♠ J♣ (top: J♣)", "5♣ 4♥ 3♠ 2♥ from column 7 → column 4 — revealed 7♠ on column 7", "J♣ from waste → column 1", "10♥ 9♠ 8♦ 7♣ 6♥ 5♣ 4♥ 3♠ 2♥ from column 4 → column 1 — revealed 9♦ on column 4", "9♦ from column 4 → column 6 — revealed K♠ on column 4", "Drew 3: 8♥ 7♥ 6♦ (top: 6♦)", "Drew 3: 4♠ 5♦ 9♥ (top: 9♥)", "Drew 3: 2♠ 5♥ 7♦ (top: 7♦)", "Drew 3: 9♣ 3♥ 10♠ (top: 10♠)", "Drew 1: 8♠ (top: 8♠)", "Recycled waste back to stock (pass 6)", "Drew 3: 5♠ J♠ 8♥ (top: 8♥)", "Drew 3: 7♥ 6♦ 4♠ (top: 4♠)", "Drew 3: 5♦ 9♥ 2♠ (top: 2♠)", "2♠ → foundation", "Drew 3: 5♥ 7♦ 9♣ (top: 9♣)"] }, { "label": "Drill 2: died move 91 — K♦ pulled from the deck", "t": "6♦ | 9♠ Q♠ | A♥ 3♠ 9♦ | 6♣ 6♠ 4♦ Q♥ | J♣ 7♠ 4♣ K♥ 5♦ | 10♠ 3♥ 3♦ A♦ 7♣ A♣ | A♠ K♣ 5♠ 5♥ 8♥ 2♥ K♠", "s": "10♦ 4♠ 9♥ 5♣ 2♣ 8♣ 2♠ 8♦ 4♥ 7♥ 10♥ Q♦ 9♣ 10♣ 3♣ J♠ Q♣ J♥ J♦ K♦ 7♦ 6♥ 2♦ 8♠", "m": ["A♣ → foundation — revealed 7♣ on column 6", "Q♥ from column 4 → column 7 — revealed 4♦ on column 4", "6♦ from column 1 → column 6", "K♠ Q♥ from column 7 → column 1 — revealed 2♥ on column 7", "Drew 3: 8♠ 2♦ 6♥ (top: 6♥)", "Drew 3: 7♦ K♦ J♦ (top: J♦)", "J♦ from waste → column 2", "Drew 3: J♥ Q♣ J♠ (top: J♠)", "J♠ from waste → column 1", "Drew 3: 3♣ 10♣ 9♣ (top: 9♣)", "Drew 3: Q♦ 10♥ 7♥ (top: 7♥)", "Drew 3: 4♥ 8♦ 2♠ (top: 2♠)", "Drew 3: 8♣ 2♣ 5♣ (top: 5♣)", "5♣ from waste → column 6", "4♦ from column 4 → column 6 — revealed 6♠ on column 4", "5♦ from column 5 → column 4 — revealed K♥ on column 5", "Q♠ J♦ from column 2 → column 5 — revealed 9♠ on column 2", "2♣ → foundation", "Drew 3: 9♥ 4♠ 10♦ (top: 10♦)", "10♦ from waste → column 1", "9♠ from column 2 → column 1", "K♥ Q♠ J♦ from column 5 → column 2 — revealed 4♣ on column 5", "Recycled waste back to stock (pass 2)", "Drew 3: 8♠ 2♦ 6♥ (top: 6♥)", "Drew 3: 7♦ K♦ J♥ (top: J♥)", "Drew 3: Q♣ 3♣ 10♣ (top: 10♣)", "10♣ from waste → column 2", "9♦ from column 3 → column 2 — revealed 3♠ on column 3", "3♣ → foundation", "Drew 3: 9♣ Q♦ 10♥ (top: 10♥)", "Drew 3: 7♥ 4♥ 8♦ (top: 8♦)", "8♦ from waste → column 1", "7♣ 6♦ 5♣ 4♦ from column 6 → column 1 — revealed A♦ on column 6", "A♦ → foundation — revealed 3♦ on column 6", "4♣ → foundation — revealed 7♠ on column 5", "Undo", "Drew 3: 2♠ 8♣ 9♥ (top: 9♥)", "Drew 1: 4♠ (top: 4♠)", "Recycled waste back to stock (pass 3)", "Drew 3: 8♠ 2♦ 6♥ (top: 6♥)", "Drew 3: 7♦ K♦ J♥ (top: J♥)", "Drew 3: Q♣ 9♣ Q♦ (top: Q♦)", "Drew 3: 10♥ 7♥ 4♥ (top: 4♥)", "Drew 3: 2♠ 8♣ 9♥ (top: 9♥)", "Drew 1: 4♠ (top: 4♠)", "4♠ from waste → column 4", "3♦ from column 6 → column 4 — revealed 3♥ on column 6", "4♣ → foundation — revealed 7♠ on column 5", "Recycled waste back to stock (pass 4)", "Drew 3: 8♠ 2♦ 6♥ (top: 6♥)", "Drew 3: 7♦ K♦ J♥ (top: J♥)", "Drew 3: Q♣ 9♣ Q♦ (top: Q♦)", "Drew 3: 10♥ 7♥ 4♥ (top: 4♥)", "Drew 3: 2♠ 8♣ 9♥ (top: 9♥)", "Recycled waste back to stock (pass 5)", "Drew 3: 8♠ 2♦ 6♥ (top: 6♥)", "2♥ from column 7 → column 3 — revealed 8♥ on column 7", "7♠ from column 5 → column 7 — revealed J♣ on column 5", "Drew 3: 7♦ K♦ J♥ (top: J♥)", "Drew 3: Q♣ 9♣ Q♦ (top: Q♦)", "3♠ 2♥ from column 3 → column 1 — revealed A♥ on column 3", "A♥ → foundation", "2♥ → foundation", "3♥ → foundation — revealed 10♠ on column 6", "Drew 3: 10♥ 7♥ 4♥ (top: 4♥)", "4♥ → foundation", "Drew 3: 2♠ 8♣ 9♥ (top: 9♥)", "Recycled waste back to stock (pass 6)", "Drew 3: 8♠ 2♦ 6♥ (top: 6♥)", "Drew 3: 7♦ K♦ J♥ (top: J♥)", "Drew 3: Q♣ 9♣ Q♦ (top: Q♦)", "Drew 3: 10♥ 7♥ 2♠ (top: 2♠)", "Drew 2: 8♣ 9♥ (top: 9♥)", "Recycled waste back to stock (pass 7)", "Drew 3: 8♠ 2♦ 6♥ (top: 6♥)", "Drew 3: 7♦ K♦ J♥ (top: J♥)", "Drew 3: Q♣ 9♣ Q♦ (top: Q♦)", "Drew 3: 10♥ 7♥ 2♠ (top: 2♠)", "Drew 2: 8♣ 9♥ (top: 9♥)", "Recycled waste back to stock (pass 8)", "Drew 3: 8♠ 2♦ 6♥ (top: 6♥)", "6♥ from waste → column 7", "2♦ → foundation", "3♦ → foundation", "Drew 3: 7♦ K♦ J♥ (top: J♥)", "Drew 3: Q♣ 9♣ Q♦ (top: Q♦)", "Drew 3: 10♥ 7♥ 2♠ (top: 2♠)", "Drew 2: 8♣ 9♥ (top: 9♥)", "Recycled waste back to stock (pass 9)", "Drew 3: 8♠ 7♦ K♦ (top: K♦)"] }, { "label": "Drill 3: died move 10 — K♠ pulled from the deck", "t": "A♥ | J♣ Q♣ | K♥ 3♥ 4♣ | 7♠ 7♥ 10♠ 2♥ | 9♦ 5♣ J♦ 3♣ 7♣ | 5♠ A♦ Q♦ 9♥ A♠ 4♦ | 5♥ 2♦ 10♣ 6♠ 9♠ Q♥ Q♠", "s": "K♣ K♦ 2♠ K♠ A♣ J♥ 2♣ 10♥ 8♦ 7♦ 5♦ 3♦ 8♣ 6♣ 4♠ 9♣ 4♥ 8♥ 6♥ 6♦ 3♠ 10♦ J♠ 8♠", "m": ["A♥ → foundation", "2♥ → foundation — revealed 10♠ on column 4", "Drew 3: 8♠ J♠ 10♦ (top: 10♦)", "Drew 3: 3♠ 6♦ 6♥ (top: 6♥)", "Drew 3: 8♥ 4♥ 9♣ (top: 9♣)", "Drew 3: 4♠ 6♣ 8♣ (top: 8♣)", "Drew 3: 3♦ 5♦ 7♦ (top: 7♦)", "Drew 3: 8♦ 10♥ 2♣ (top: 2♣)", "Drew 3: J♥ A♣ K♠ (top: K♠)"] }, { "label": "Drill 4: died move 56 — 4♣ pulled from the deck", "t": "3♥ | 5♠ K♣ | 9♥ 7♣ 3♠ | J♣ 6♣ 6♠ 4♦ | A♦ 2♣ J♥ 4♥ 2♦ | 9♣ J♦ 2♥ A♠ K♦ 5♣ | 8♣ 6♥ Q♠ 10♣ 2♠ 8♥ J♠", "s": "7♠ 10♦ 4♣ 9♦ K♠ Q♦ K♥ 5♥ 6♦ 5♦ 8♦ 7♦ 8♠ 9♠ Q♥ A♣ 3♦ 4♠ 10♥ 3♣ 7♥ 10♠ A♥ Q♣", "m": ["3♠ from column 3 → column 4 — revealed 7♣ on column 3", "2♦ from column 5 → column 4 — revealed 4♥ on column 5", "4♥ from column 5 → column 6 — revealed J♥ on column 5", "Drew 3: Q♣ A♥ 10♠ (top: 10♠)", "Drew 3: 7♥ 3♣ 10♥ (top: 10♥)", "Drew 3: 4♠ 3♦ A♣ (top: A♣)", "A♣ → foundation", "Drew 3: Q♥ 9♠ 8♠ (top: 8♠)", "Drew 3: 7♦ 8♦ 5♦ (top: 5♦)", "Drew 3: 6♦ 5♥ K♥ (top: K♥)", "Drew 3: Q♦ K♠ 9♦ (top: 9♦)", "Drew 3: 4♣ 10♦ 7♠ (top: 7♠)", "Recycled waste back to stock (pass 2)", "Drew 3: Q♣ A♥ 10♠ (top: 10♠)", "10♠ from waste → column 5", "A♥ → foundation", "Drew 3: 7♥ 3♣ 10♥ (top: 10♥)", "Drew 3: 4♠ 3♦ Q♥ (top: Q♥)", "Q♥ from waste → column 2", "J♠ from column 7 → column 2 — revealed 8♥ on column 7", "7♣ from column 3 → column 7 — revealed 9♥ on column 3", "9♥ from column 3 → column 5", "K♣ Q♥ J♠ from column 2 → column 3 — revealed 5♠ on column 2", "4♦ 3♠ 2♦ from column 4 → column 2 — revealed 6♠ on column 4", "Drew 3: 9♠ 8♠ 7♦ (top: 7♦)", "Drew 3: 8♦ 5♦ 6♦ (top: 6♦)", "6♦ from waste → column 7", "5♠ 4♦ 3♠ 2♦ from column 2 → column 7", "Drew 3: 5♥ K♥ Q♦ (top: Q♦)", "Drew 3: K♠ 9♦ 4♣ (top: 4♣)", "Drew 2: 10♦ 7♠ (top: 7♠)", "Recycled waste back to stock (pass 3)", "Drew 3: Q♣ 7♥ 3♣ (top: 3♣)", "Drew 3: 10♥ 4♠ 3♦ (top: 3♦)", "Drew 3: 9♠ 8♠ 7♦ (top: 7♦)", "Drew 3: 8♦ 5♦ 5♥ (top: 5♥)", "Drew 3: K♥ Q♦ K♠ (top: K♠)", "K♠ from waste → column 2", "Q♦ from waste → column 2", "Drew 3: 9♦ 4♣ 10♦ (top: 10♦)", "Drew 1: 7♠ (top: 7♠)", "Recycled waste back to stock (pass 4)", "Drew 3: Q♣ 7♥ 3♣ (top: 3♣)", "Drew 3: 10♥ 4♠ 3♦ (top: 3♦)", "Drew 3: 9♠ 8♠ 7♦ (top: 7♦)", "Drew 3: 8♦ 5♦ 5♥ (top: 5♥)", "Drew 3: K♥ 9♦ 4♣ (top: 4♣)", "Drew 2: 10♦ 7♠ (top: 7♠)", "Recycled waste back to stock (pass 5)", "Drew 3: Q♣ 7♥ 3♣ (top: 3♣)", "Drew 3: 10♥ 4♠ 3♦ (top: 3♦)", "Drew 3: 9♠ 8♠ 7♦ (top: 7♦)", "Drew 3: 8♦ 5♦ 5♥ (top: 5♥)", "5♥ from waste → column 4", "Drew 3: K♥ 9♦ 4♣ (top: 4♣)"] }, { "label": "Drill 5: died move 10 — 3♦ 2♠ moved col6→7", "t": "10♥ | 7♥ 10♦ | Q♦ Q♠ 8♥ | 10♠ A♠ J♦ A♦ | 4♠ K♣ 6♦ 6♥ J♠ | 2♥ 7♠ 6♠ Q♣ 4♥ 3♦ | Q♥ 9♠ K♠ 7♣ 4♦ 5♦ 2♠", "s": "A♥ 3♠ 9♦ 2♣ J♥ A♣ 6♣ 8♠ 8♣ 3♥ 10♣ K♥ 4♣ 7♦ 5♥ 5♠ 5♣ 8♦ 2♦ K♦ 9♣ J♣ 9♥ 3♣", "m": ["A♦ → foundation — revealed J♦ on column 4", "10♦ from column 2 → column 5 — revealed 7♥ on column 2", "2♠ from column 7 → column 6 — revealed 5♦ on column 7", "Drew 3: 3♣ 9♥ J♣ (top: J♣)", "Drew 3: 9♣ K♦ 2♦ (top: 2♦)", "2♦ → foundation", "Drew 3: 8♦ 5♣ 5♠ (top: 5♠)", "Drew 3: 5♥ 7♦ 4♣ (top: 4♣)", "4♣ from waste → column 7"] }, { "label": "Drill 6: died move 51 — Drew past the win", "t": "7♠ | 4♠ 10♠ | 3♠ K♣ 7♦ | 5♠ A♠ J♥ Q♦ | A♣ K♦ 7♣ J♦ Q♥ | 6♦ 5♥ 3♣ 2♣ 9♥ 2♠ | 10♦ 9♣ 2♥ J♣ Q♣ 6♠ 10♥", "s": "9♠ A♦ 2♦ 8♥ 5♦ 7♥ 6♣ 3♥ 8♠ 9♦ 4♣ Q♠ A♥ 6♥ 5♣ K♥ 4♥ 8♦ 8♣ 3♦ J♠ K♠ 4♦ 10♣", "m": ["Drew 3: 10♣ 4♦ K♠ (top: K♠)", "Drew 3: J♠ 3♦ 8♣ (top: 8♣)", "Drew 3: 8♦ 4♥ K♥ (top: K♥)", "Drew 3: 5♣ 6♥ A♥ (top: A♥)", "A♥ → foundation", "Drew 3: Q♠ 4♣ 9♦ (top: 9♦)", "Drew 3: 8♠ 3♥ 6♣ (top: 6♣)", "Drew 3: 7♥ 5♦ 8♥ (top: 8♥)", "Drew 3: 2♦ A♦ 9♠ (top: 9♠)", "9♠ from waste → column 7", "A♦ → foundation", "2♦ → foundation", "8♥ from waste → column 7", "7♠ from column 1 → column 7", "Recycled waste back to stock (pass 2)", "Drew 3: 10♣ 4♦ K♠ (top: K♠)", "K♠ from waste → column 1", "Q♥ from column 5 → column 1 — revealed J♦ on column 5", "10♠ from column 2 → column 5 — revealed 4♠ on column 2", "Drew 3: J♠ 3♦ 8♣ (top: 8♣)", "Drew 3: 8♦ 4♥ K♥ (top: K♥)", "Drew 3: 5♣ 6♥ Q♠ (top: Q♠)", "Drew 3: 4♣ 9♦ 8♠ (top: 8♠)", "Drew 3: 3♥ 6♣ 7♥ (top: 7♥)", "Drew 1: 5♦ (top: 5♦)", "Recycled waste back to stock (pass 3)", "Drew 3: 10♣ 4♦ J♠ (top: J♠)", "J♠ from waste → column 1", "10♥ 9♠ 8♥ 7♠ from column 7 → column 1 — revealed 6♠ on column 7", "6♠ from column 7 → column 3 — revealed Q♣ on column 7", "J♦ 10♠ from column 5 → column 7 — revealed 7♣ on column 5", "Drew 3: 3♦ 8♣ 8♦ (top: 8♦)", "Drew 3: 4♥ K♥ 5♣ (top: 5♣)", "Drew 3: 6♥ Q♠ 4♣ (top: 4♣)", "Drew 3: 9♦ 8♠ 3♥ (top: 3♥)", "3♥ from waste → column 2", "2♠ from column 6 → column 2 — revealed 9♥ on column 6", "9♥ from column 6 → column 7 — revealed 2♣ on column 6", "8♠ from waste → column 7", "7♦ 6♠ from column 3 → column 7 — revealed K♣ on column 3", "Q♦ from column 4 → column 3 — revealed J♥ on column 4", "Drew 3: 6♣ 7♥ 5♦ (top: 5♦)", "5♦ from waste → column 7", "4♠ 3♥ 2♠ from column 2 → column 7", "K♣ Q♦ from column 3 → column 2 — revealed 3♠ on column 3", "Recycled waste back to stock (pass 4)", "Drew 3: 10♣ 4♦ 3♦ (top: 3♦)", "Drew 3: 8♣ 8♦ 4♥ (top: 4♥)", "Drew 3: K♥ 5♣ 6♥ (top: 6♥)", "6♥ from waste → column 1"] }, { "label": "Drill 7: died move 40 — 8♦ moved col5→1", "t": "K♣ | 4♦ 5♥ | 4♥ 7♦ 2♣ | 4♣ 3♣ 3♠ 8♠ | 10♠ K♦ 8♦ K♥ 2♠ | 9♥ 5♣ 3♦ 4♠ 8♥ A♦ | J♦ 9♣ 5♠ 2♦ A♠ 7♥ J♠", "s": "A♣ 2♥ Q♣ 7♣ 6♦ 8♣ 6♠ 10♦ 6♥ Q♥ 10♣ Q♠ Q♦ 9♠ K♠ 5♦ 10♥ 9♦ 6♣ J♣ 3♥ A♥ J♥ 7♠", "m": ["A♦ → foundation — revealed 8♥ on column 6", "Drew 3: 7♠ J♥ A♥ (top: A♥)", "A♥ → foundation", "Drew 3: 3♥ J♣ 6♣ (top: 6♣)", "Drew 3: 9♦ 10♥ 5♦ (top: 5♦)", "Drew 3: K♠ 9♠ Q♦ (top: Q♦)", "Q♦ from waste → column 1", "J♠ from column 7 → column 1 — revealed 7♥ on column 7", "7♥ from column 7 → column 4 — revealed A♠ on column 7", "A♠ → foundation — revealed 2♦ on column 7", "2♦ → foundation — revealed 5♠ on column 7", "2♠ → foundation — revealed K♥ on column 5", "Drew 3: Q♠ 10♣ Q♥ (top: Q♥)", "Drew 3: 6♥ 10♦ 6♠ (top: 6♠)", "6♠ from waste → column 4", "5♥ from column 2 → column 4 — revealed 4♦ on column 2", "4♦ from column 2 → column 7", "K♥ from column 5 → column 2 — revealed 8♦ on column 5", "Drew 3: 8♣ 6♦ 7♣ (top: 7♣)", "Drew 3: Q♣ 2♥ A♣ (top: A♣)", "A♣ → foundation", "2♥ → foundation", "Recycled waste back to stock (pass 2)", "Drew 3: 7♠ J♥ 3♥ (top: 3♥)", "2♣ → foundation — revealed 7♦ on column 3", "3♥ → foundation", "Drew 3: J♣ 6♣ 9♦ (top: 9♦)", "Drew 3: 10♥ 5♦ K♠ (top: K♠)", "Drew 3: 9♠ Q♠ 10♣ (top: 10♣)", "Drew 3: Q♥ 6♥ 10♦ (top: 10♦)", "Drew 3: 8♣ 6♦ 7♣ (top: 7♣)", "Drew 1: Q♣ (top: Q♣)", "Q♣ from waste → column 2", "Recycled waste back to stock (pass 3)", "Drew 3: 7♠ J♥ J♣ (top: J♣)", "Drew 3: 6♣ 9♦ 10♥ (top: 10♥)", "10♥ from waste → column 1", "Drew 3: 5♦ K♠ 9♠ (top: 9♠)", "9♠ from waste → column 1"] }];
 const fmtTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 // ---------- Tip visuals ----------
 const parseMini = (str) => {
@@ -18487,6 +18490,22 @@ function SolitaireCoach() {
     const [savedFile, setSavedFile] = useState(null); // filename of last saved report, or null
     const [keyUI, setKeyUI] = useState(false); // API-key input row visible in chat drawer
     const [apiKeyDraft, setApiKeyDraft] = useState("");
+    // ---------- Training mode ----------
+    const [train, setTrain] = useState(false);
+    const [cue, setCue] = useState(null); // {type, q, why, showWhy, proceed}
+    const [tripwire, setTripwire] = useState(null); // {move, checking?, dead?}
+    const [drillMenu, setDrillMenu] = useState(false);
+    const tripChecked = useRef(0);
+    const cuedMoveRef = useRef(null); // {type, at} awaiting tripwire verdict
+    const trainStats = useRef((() => {
+        try {
+            const r = window.localStorage.getItem("kc-train-stats");
+            if (r)
+                return JSON.parse(r);
+        }
+        catch (e) { }
+        return { king: 0, pull: 0, pass: 0, gradKing: false, gradPull: false, gradPass: false, deaths: 0 };
+    })());
     const [doctrineOpen, setDoctrineOpen] = useState(null); // null | section key
     const [replayGuide, setReplayGuide] = useState(null); // { at, steps } while re-living a reviewed moment
     const reviewStash = useRef(null); // the full review context to return to from a replay
@@ -18704,6 +18723,58 @@ function SolitaireCoach() {
         }, 80);
         return () => clearTimeout(t);
     }, [game, replayGuide, won]);
+    // Training tripwire: after every commitment move, prove-or-clear. Only a
+    // PROVEN death fires the banner (honest statistics); take-back is free.
+    useEffect(() => {
+        if (!train || won)
+            return;
+        const n = moveLog.length;
+        if (n === 0 || n <= tripChecked.current)
+            return;
+        const last = moveLog[n - 1] || "";
+        if (last === "Undo" || last.startsWith("Drew") || last.startsWith("Recycled")) {
+            tripChecked.current = n;
+            return;
+        }
+        tripChecked.current = n;
+        setTripwire({ move: n, checking: true });
+        const t = setTimeout(() => {
+            try {
+                const g = gameRef.current;
+                const SUI = { "\u2660": 0, "\u2665": 1, "\u2666": 2, "\u2663": 3 };
+                const fArr = [0, 0, 0, 0];
+                g.foundations.forEach((p) => { if (p.length)
+                    fArr[SUI[p[0].suit]] = p[p.length - 1].rank; });
+                let v = isSolvable(g.tableau, g.stock, g.waste, fArr, 30000);
+                if (v !== true)
+                    v = isSolvable(g.tableau, g.stock, g.waste, fArr, 800000);
+                const cm = cuedMoveRef.current;
+                if (v === false) {
+                    setTripwire({ move: n, dead: true });
+                    trainStats.current.deaths += 1;
+                    if (cm && cm.at === n)
+                        trainStats.current[cm.type] = 0;
+                    saveTrainStats();
+                }
+                else {
+                    setTripwire(null);
+                    if (cm && cm.at === n) {
+                        const k = cm.type;
+                        trainStats.current[k] = (trainStats.current[k] || 0) + 1;
+                        if (trainStats.current[k] >= 10)
+                            trainStats.current["grad" + k[0].toUpperCase() + k.slice(1)] = true;
+                        saveTrainStats();
+                    }
+                }
+                if (cm && cm.at === n)
+                    cuedMoveRef.current = null;
+            }
+            catch (err) {
+                setTripwire(null);
+            }
+        }, 60);
+        return () => clearTimeout(t);
+    }, [moveLog, train, won]);
     // invariant: a column's top card can never sit face-down — self-heal if any race slips through
     useEffect(() => {
         let broken = false;
@@ -18767,6 +18838,29 @@ function SolitaireCoach() {
     }
     // ---------- Moves ----------
     function drawCards() {
+        if (train && !trainStats.current.gradPass) {
+            const g = gameRef.current;
+            if (g.stock.length === 0 && g.waste.length > 0) {
+                let plays = 0;
+                for (let i = moveLog.length - 1; i >= 0; i--) {
+                    const l = moveLog[i];
+                    if (l.startsWith("Recycled"))
+                        break;
+                    if (!l.startsWith("Drew"))
+                        plays++;
+                }
+                if (plays === 0 && moveLog.length > 0) {
+                    setCue({ type: "pass",
+                        q: "Dead pass \u2014 recycling now repeats it exactly. Protocol: a skipped card that passes the covering test? A landing to build for a card you watched cycle?",
+                        why: "A pass with zero plays repeats itself. Re-phase with the earliest clean pull, build a landing for a cycler, or accept that it's over.",
+                        proceed: () => { cuedMoveRef.current = { type: "pass", at: moveLog.length + 1 }; drawCardsNow(); } });
+                    return;
+                }
+            }
+        }
+        drawCardsNow();
+    }
+    function drawCardsNow() {
         const g = gameRef.current;
         if (g.stock.length === 0 && g.waste.length === 0)
             return;
@@ -19205,7 +19299,7 @@ function SolitaireCoach() {
         catch (e) {
             data = { grade: "\u2014", summary: `Couldn't replay this game for verification (${String((e && e.message) || e).slice(0, 80)})`, habit: "", tips: [], focus: null };
         }
-        if (data.grade && data.grade !== "\u2014") {
+        if (data.grade && data.grade !== "\u2014" && !train) {
             sessionGames.current.push({ grade: data.grade, focus: data.focus, won });
             data.session = sessionGames.current.slice();
         }
@@ -19217,9 +19311,9 @@ function SolitaireCoach() {
             }
         }
         catch (e) { }
-        // ---- 2) persistent stats across sessions ----
+        // ---- 2) persistent stats across sessions ---- (training games excluded)
         try {
-            if (kcStorage) {
+            if (kcStorage && !train) {
                 let hist = [];
                 try {
                     const r = await kcStorage.get("kc-games");
@@ -19561,6 +19655,89 @@ TOPIC the player opened chat about: ${topic}`;
         }
         catch (e) { }
     }
+    function saveTrainStats() {
+        try {
+            window.localStorage.setItem("kc-train-stats", JSON.stringify(trainStats.current));
+        }
+        catch (e) { }
+    }
+    // Pre-move checkpoint cues on the proven killer move types. The cue asks the
+    // question; the player answers it. Graduates (goes silent) at 10 clean.
+    function maybeCueThen(source) {
+        if (train && source.type === "waste") {
+            const g = gameRef.current;
+            const wTop = g.waste[g.waste.length - 1];
+            const st = trainStats.current;
+            if (wTop && wTop.rank === 13 && !st.gradKing) {
+                setCue({ type: "king",
+                    q: `King question: what does the ${cardName(wTop)} unblock that the other-color king wouldn't?`,
+                    why: "A king off the deck is a double commitment: the pull re-phases the deck, and the space it fills locks into one color ladder. Odd ranks wear the king's color \u2014 name your problem card first.",
+                    proceed: () => { cuedMoveRef.current = { type: "king", at: moveLog.length + 1 }; autoMove(source); } });
+                return;
+            }
+            if (wTop && canFoundation(wTop, g.foundations[SUITS.indexOf(wTop.suit)]) && !st.gradPull) {
+                setCue({ type: "pull",
+                    q: `Pull check: the ${cardName(wTop)} looks free \u2014 what shifts in the deck behind it if you take it?`,
+                    why: "A waste promotion is a pull first. It re-phases every card behind it \u2014 a safe deuce has lost a won game this way.",
+                    proceed: () => { cuedMoveRef.current = { type: "pull", at: moveLog.length + 1 }; autoMove(source); } });
+                return;
+            }
+        }
+        autoMove(source);
+    }
+    function enterTraining() {
+        setTrain(true);
+        setDrillMenu(true);
+    }
+    function exitTraining() {
+        setTrain(false);
+        setCue(null);
+        setTripwire(null);
+        setDrillMenu(false);
+        cuedMoveRef.current = null;
+    }
+    function loadDrill(d) {
+        try {
+            const tableau = d.t.split("|").map((cs) => { const names = cs.trim().split(/\s+/); return names.map((name, i) => ({ name, faceUp: i === names.length - 1 })); });
+            const stock = d.s.trim().split(/\s+/);
+            const S = Doctrine.replayTo({ tableau, stock }, d.m, d.m.length);
+            if (!S)
+                return;
+            const SUI = { "\u2660": 0, "\u2665": 1, "\u2666": 2, "\u2663": 3 };
+            const mkC = (c, up) => ({ id: 1000 + c.r * 4 + SUI[c.s], rank: c.r, suit: c.s, faceUp: up !== undefined ? up : !!c.u });
+            const ng = {
+                tableau: S.t.map((col) => col.map((c) => mkC(c))),
+                stock: S.stock.map((c) => mkC(c, false)),
+                waste: S.waste.map((c) => mkC(c, true)),
+                foundations: [[], [], [], []],
+                moves: d.m.length, score: 0,
+                passes: d.m.filter((l) => l.startsWith("Recycled")).length,
+                verified: true,
+            };
+            ["\u2660", "\u2665", "\u2666", "\u2663"].forEach((su, i) => {
+                for (let r = 1; r <= S.f[su]; r++)
+                    ng.foundations[i].push({ id: 1000 + r * 4 + SUI[su], rank: r, suit: su, faceUp: true });
+                ng.score += S.f[su] * 10;
+            });
+            setInitialDeal({ tableau, stock });
+            setMoveLog([...d.m]);
+            boardLog.current = [];
+            setHistory([]);
+            historyRef.current = [];
+            setWon(false);
+            setReview(null);
+            setAnalysis(null);
+            setReplayGuide(null);
+            setSeconds(0);
+            setStarted(true);
+            tripChecked.current = d.m.length;
+            dealtAt.current = Date.now();
+            gameRef.current = ng;
+            setGame(ng);
+            setDrillMenu(false);
+        }
+        catch (e) { }
+    }
     function safeDeal() {
         if (Date.now() - panelShownAt.current < 500)
             return; // swallow tap-through ghost clicks
@@ -19655,7 +19832,7 @@ TOPIC the player opened chat about: ${topic}`;
         if (!ps)
             return;
         if (!ps.moved) {
-            autoMove(ps.source);
+            maybeCueThen(ps.source);
             return;
         }
         skipAnimIds.current = new Set(ps.cards.map((c) => c.id));
@@ -19800,7 +19977,8 @@ TOPIC the player opened chat about: ${topic}`;
                         game.score)),
                 React.createElement("div", { style: { display: "flex", gap: 8 } },
                     React.createElement("button", { style: btn, onClick: undo, disabled: !history.length }, "Undo"),
-                    React.createElement("button", { style: btn, onClick: newGame }, "New"))),
+                    React.createElement("button", { style: btn, onClick: newGame }, "New"),
+                    React.createElement("button", { style: { ...btn, background: train ? "#d4af37" : btn.background, color: train ? "#0a3d23" : btn.color }, onClick: () => (train ? exitTraining() : enterTraining()) }, train ? "Exit training" : "Train"))),
             React.createElement("div", { style: {
                     display: "flex",
                     justifyContent: "space-between",
@@ -19815,6 +19993,7 @@ TOPIC the player opened chat about: ${topic}`;
                     "\u00b7",
                     " ",
                     BUILD,
+                    train ? " \u00b7 TRAINING" : "",
                     storageStatus === "none" ? " \u00b7 no storage" : storageStatus.startsWith("ok:") ? ` \u00b7 saved: ${storageStatus.slice(3)}` : ""),
                 React.createElement("button", { onClick: () => setDoctrineOpen("master"), style: { border: "none", background: "none", color: "rgba(247,243,230,0.9)", textDecoration: "underline", fontSize: 13, cursor: "pointer", padding: "0 6px" } }, "Strategy"),
                 hasLastReport && (React.createElement("button", { onClick: async () => {
@@ -20216,6 +20395,44 @@ TOPIC the player opened chat about: ${topic}`;
             drag && (React.createElement("div", { style: { position: "fixed", left: drag.x, top: drag.y, zIndex: 2000, pointerEvents: "none" } }, drag.cards.map((c, i) => (React.createElement("div", { key: c.id, style: cardStyle(c, { top: i * OFF_UP, boxShadow: "0 6px 16px rgba(0,0,0,0.5)" }) },
                 React.createElement(CardFace, { c: c }))))))),
         doctrineOpen && React.createElement(DoctrinePanel, { target: doctrineOpen, onClose: () => setDoctrineOpen(null) }),
+        train && cue && (React.createElement("div", { style: { position: "fixed", inset: 0, zIndex: 4000, background: "rgba(6,30,17,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } },
+            React.createElement("div", { style: { background: "#f7f4e8", borderRadius: 14, padding: "16px 18px", maxWidth: 380, boxShadow: "0 8px 30px rgba(0,0,0,0.4)" } },
+                React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "#8a6d1a", letterSpacing: "0.06em", marginBottom: 6 } }, "TRAINING CHECKPOINT"),
+                React.createElement("div", { style: { fontSize: 14.5, lineHeight: 1.45, color: "#222", fontWeight: 600 } },
+                    React.createElement(RichText, { text: cue.q })),
+                cue.showWhy && React.createElement("p", { style: { fontSize: 13, lineHeight: 1.45, color: "#555", margin: "10px 0 0" } }, cue.why),
+                React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 14, justifyContent: "flex-end" } },
+                    React.createElement("button", { onClick: () => setCue(null), style: { border: "1px solid #ccc", background: "#fff", borderRadius: 10, padding: "8px 12px", fontSize: 13, cursor: "pointer", color: "#555" } }, "Hold off"),
+                    !cue.showWhy && React.createElement("button", { onClick: () => setCue({ ...cue, showWhy: true }), style: { border: "1px solid #ccc", background: "#fff", borderRadius: 10, padding: "8px 12px", fontSize: 13, cursor: "pointer", color: "#555" } }, "Why?"),
+                    React.createElement("button", { onClick: () => { const go = cue.proceed; setCue(null); go(); }, style: { border: "none", background: "#0f5230", color: "#fff", borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" } }, "Make the move"))))),
+        train && tripwire && !cue && (React.createElement("div", { style: { position: "fixed", left: 0, right: 0, bottom: 14, zIndex: 3900, display: "flex", justifyContent: "center", pointerEvents: "none" } },
+            React.createElement("div", { style: { pointerEvents: "auto", background: tripwire.dead ? "#5c1a1a" : "rgba(10,61,35,0.92)", color: "#f2ecd8", borderRadius: 12, padding: "10px 14px", fontSize: 13.5, display: "flex", gap: 10, alignItems: "center", boxShadow: "0 4px 18px rgba(0,0,0,0.4)", maxWidth: 420 } }, tripwire.checking ? (React.createElement("span", null,
+                "checking that move",
+                "\u2026")) : (React.createElement(React.Fragment, null,
+                React.createElement("span", null,
+                    "\u2715",
+                    " That move closed the door ",
+                    "\u2014",
+                    " provably dead from here."),
+                React.createElement("button", { onClick: () => { setTripwire(null); undo(); }, style: { border: "none", background: "#d4af37", color: "#0a3d23", borderRadius: 9, padding: "7px 11px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" } }, "Take it back"),
+                React.createElement("button", { onClick: () => setTripwire(null), style: { border: "1px solid rgba(255,255,255,0.4)", background: "none", color: "#f2ecd8", borderRadius: 9, padding: "7px 10px", fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" } }, "Play on")))))),
+        train && drillMenu && (React.createElement("div", { style: { position: "fixed", inset: 0, zIndex: 4100, background: "rgba(6,30,17,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }, onClick: (e) => { if (e.target === e.currentTarget)
+                setDrillMenu(false); } },
+            React.createElement("div", { style: { background: "#f7f4e8", borderRadius: 14, padding: "18px", maxWidth: 420, width: "100%", maxHeight: "80%", overflowY: "auto", boxShadow: "0 8px 30px rgba(0,0,0,0.4)" } },
+                React.createElement("div", { style: { fontSize: 15, fontWeight: 700, color: "#0f5230", marginBottom: 4 } }, "Training mode"),
+                React.createElement("p", { style: { fontSize: 12.5, color: "#666", margin: "0 0 12px", lineHeight: 1.4 } },
+                    "Checkpoint questions before risky moves ",
+                    "\u00b7",
+                    " instant flag + free take-back when a move provably kills the game ",
+                    "\u00b7",
+                    " cues retire after 10 clean answers. Training games don't touch your stats."),
+                React.createElement("button", { onClick: () => { setDrillMenu(false); doNewGame(); }, style: { width: "100%", border: "none", background: "#0f5230", color: "#fff", borderRadius: 10, padding: "11px", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 10 } }, "Fresh deal"),
+                React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "#8a6d1a", letterSpacing: "0.06em", margin: "6px 0" } },
+                    "YOUR DEATHS ",
+                    "\u00b7",
+                    " RETRY THE EXACT SPOT"),
+                DRILLS.map((d, i) => (React.createElement("button", { key: i, onClick: () => loadDrill(d), style: { width: "100%", textAlign: "left", border: "1px solid #d8d2bd", background: "#fff", borderRadius: 10, padding: "9px 11px", fontSize: 13, cursor: "pointer", color: "#333", marginBottom: 6 } },
+                    React.createElement(RichText, { text: d.label }))))))),
         chat && (React.createElement("div", { style: { position: "fixed", inset: 0, zIndex: 3500, background: "rgba(6,30,17,0.55)", display: "flex", flexDirection: "column", justifyContent: "flex-end" }, onClick: (e) => { if (e.target === e.currentTarget)
                 setChat(null); } },
             React.createElement("div", { style: { background: "#f7f4e8", borderRadius: "16px 16px 0 0", maxHeight: "72%", display: "flex", flexDirection: "column", boxShadow: "0 -8px 30px rgba(0,0,0,0.4)" } },
