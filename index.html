@@ -17191,7 +17191,7 @@ const SUITS = ["♠", "♥", "♦", "♣"];
 const RED = { "♥": true, "♦": true };
 const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 const cardName = (c) => `${RANKS[c.rank - 1]}${c.suit}`;
-const BUILD = "v49";
+const BUILD = "v50";
 // ---------- Persistence adapter ----------
 // Replaces the Claude-artifact-only window.storage with plain localStorage.
 // Same async shape as the old API: get(key) -> { value } | null, set(key, value).
@@ -17783,6 +17783,7 @@ function isSolvable(tableauIn, stockIn, wasteIn = [], fIn = null, maxNodes = 400
     const CN = (c) => RANKS[c.r - 1] + "\u2660\u2665\u2666\u2663"[c.s];
     const mk = (c) => ({ r: c.rank, s: SU[c.suit], red: c.suit === "♥" || c.suit === "♦", id: c.id });
     let nodes = 0;
+    let capped = false; // true = search budget ran out; false verdict is then "unknown", not "proven dead"
     const seen = new Set();
     const t = tableauIn.map((col) => col.map(mk));
     const down = tableauIn.map((col) => col.filter((c) => !c.faceUp).length);
@@ -17815,8 +17816,10 @@ function isSolvable(tableauIn, stockIn, wasteIn = [], fIn = null, maxNodes = 400
         t[i].push(m.c);
     }
     function dfs() {
-        if (nodes++ > maxNodes)
+        if (nodes++ > maxNodes) {
+            capped = true;
             return false;
+        }
         if (f[0] + f[1] + f[2] + f[3] === 52)
             return true;
         if (stock.length === 0 && waste.length === 0 && down.every((d) => d === 0))
@@ -17841,6 +17844,9 @@ function isSolvable(tableauIn, stockIn, wasteIn = [], fIn = null, maxNodes = 400
             }
         }
         if (waste.length) {
+            // NOT a forced dominance: pulling from the waste re-phases the deck, so even a
+            // "safe" ace/2 promotion can lose a draw-3 game (proven by the 2♠ game, 8/21).
+            // Try the promotion first, but keep exploring declines if it fails.
             const c = waste[waste.length - 1];
             if (canFound(c) && safe(c)) {
                 waste.pop();
@@ -17848,9 +17854,11 @@ function isSolvable(tableauIn, stockIn, wasteIn = [], fIn = null, maxNodes = 400
                 const ok = dfs();
                 f[c.s]--;
                 waste.push(c);
-                if (ok && lineOut)
-                    lineOut.unshift(`${CN(c)} to the foundation`);
-                return ok;
+                if (ok) {
+                    if (lineOut)
+                        lineOut.unshift(`${CN(c)} to the foundation`);
+                    return true;
+                }
             }
         }
         // Branch: non-safe foundation plays
@@ -18002,7 +18010,10 @@ function isSolvable(tableauIn, stockIn, wasteIn = [], fIn = null, maxNodes = 400
         }
         return false;
     }
-    return dfs();
+    // tri-state: true = win found · false = PROVEN no win (search space exhausted)
+    // · null = budget ran out before the space was exhausted (unknown)
+    const won = dfs();
+    return won ? true : capped ? null : false;
 }
 function makeVerifiedDeal(maxTries = 25) {
     for (let i = 0; i < maxTries; i++) {
@@ -19055,23 +19066,29 @@ function SolitaireCoach() {
                     });
                 }
                 else {
-                    // find where winnability died: binary search over COMMITMENT moves only —
-                    // draws and recycles are reversible (the deck cycles) and can never lose a game
+                    // Find where winnability died. Bisect over commitment moves for speed,
+                    // then VERIFY the boundary with a deep, sound search: the blame stands
+                    // only if the position right before the blamed move is provably alive
+                    // and right after is provably dead (v50 — the 2\u2660 game taught us the
+                    // cheap probes alone can convict the wrong card, and draws are not
+                    // actually guaranteed harmless in draw-3).
                     const commits = [];
                     moveLog.forEach((l, i) => {
                         if (!l.startsWith("Drew") && !l.startsWith("Recycled") && l !== "Undo")
                             commits.push(i + 1);
                     });
+                    const DEEP = 3000000;
                     let lastLine = [];
                     let lo = 0, hi = moveLog.length;
+                    let blame = null; // { at, wasDraw, steps } when boundary verified
                     if (solvAt(0, 30000) === false)
                         lo = -1;
                     if (lo === 0 && commits.length) {
-                        let a = -1, b = commits.length - 1; // indices into commits; position after commits[k]
-                        if (!solvAt(commits[b], 25000)) {
+                        let a = -1, b = commits.length - 1;
+                        if (solvAt(commits[b], 25000) !== true) {
                             while (b - a > 1) {
                                 const mid = Math.floor((a + b) / 2);
-                                if (solvAt(commits[mid], 25000))
+                                if (solvAt(commits[mid], 25000) === true)
                                     a = mid;
                                 else
                                     b = mid;
@@ -19081,39 +19098,98 @@ function SolitaireCoach() {
                         }
                         else {
                             lo = commits[b];
-                            hi = moveLog.length; // died only in the tail? shouldn't happen — final was dead
+                            hi = moveLog.length;
                         }
+                        // deep verification of the candidate boundary
+                        const deadAfter = solvAt(hi, DEEP) === false;
                         lastLine = [];
-                        solvAt(lo, 30000, lastLine);
-                    }
-                    const steps = annotate(lastLine).slice(0, 4);
-                    const killLine = lo >= 0 && moveLog[hi - 1] ? moveLog[hi - 1].replace(/\s*\u2014.*$/, "") : "";
-                    const killCard = (killLine.match(/^(10|[2-9AJQK])[\u2660\u2665\u2666\u2663]/) || [null])[0];
-                    let killDest = (killLine.match(/\u2192\s*(.+)$/) || [null, ""])[1];
-                    try {
-                        const colM = killDest && killDest.match(/column (\d)/);
-                        if (colM) {
-                            const Sb = Doctrine.replayTo({ tableau: initialDeal.tableau, stock: initialDeal.stock }, moveLog, hi - 1);
-                            const pile = Sb && Sb.t[+colM[1] - 1];
-                            if (pile && pile.length) {
-                                const tp = pile[pile.length - 1];
-                                killDest = `onto the ${RANKS[tp.r - 1]}${tp.s}`;
-                            }
-                            else if (pile)
-                                killDest = "into the empty column";
+                        const aliveBefore = solvAt(hi - 1, DEEP, lastLine) === true;
+                        if (deadAfter && aliveBefore) {
+                            blame = { at: hi, wasDraw: false, steps: annotate(lastLine).slice(0, 4) };
                         }
+                        else if (deadAfter && !aliveBefore) {
+                            // the flip happened earlier — walk the gap (draws included)
+                            for (let n = lo + 1; n < hi && !blame; n++) {
+                                if (solvAt(n, DEEP) === false) {
+                                    lastLine = [];
+                                    if (solvAt(n - 1, DEEP, lastLine) === true) {
+                                        const mv = moveLog[n - 1] || "";
+                                        blame = { at: n, wasDraw: mv.startsWith("Drew") || mv.startsWith("Recycled"), steps: annotate(lastLine).slice(0, 4) };
+                                    }
+                                }
+                            }
+                        }
+                        // blame stays null when the deep search can't prove the boundary — degrade honestly below
                     }
-                    catch (e) { }
-                    tips.unshift({
-                        move: lo > 0 ? hi : null, verified: true, principle: "Solver check",
-                        title: lo >= 0 ? `The game died at move ${hi}` : "No escape found from the start",
-                        detail: lo >= 0
-                            ? `Playing the ${killCard || "card"} here is what closed the door \u2014 sometimes the winning play is holding a card back. Right before it, the solver still wins:`
-                            : "The solver finds no winning line even from the opening position within its budget \u2014 this one may have been lost to the shuffle, not to you.",
-                        steps: lo >= 0 ? steps : null,
-                        ctx: killCard ? { kill: killCard, killDest: killDest || "" } : null,
-                        visual: null, saves: null,
-                    });
+                    if (blame && !blame.wasDraw) {
+                        const killLine = moveLog[blame.at - 1] ? moveLog[blame.at - 1].replace(/\s*\u2014.*$/, "") : "";
+                        const killCard = (killLine.match(/^(10|[2-9AJQK])[\u2660\u2665\u2666\u2663]/) || [null])[0];
+                        let killDest = (killLine.match(/\u2192\s*(.+)$/) || [null, ""])[1];
+                        try {
+                            const colM = killDest && killDest.match(/column (\d)/);
+                            if (colM) {
+                                const Sb = Doctrine.replayTo({ tableau: initialDeal.tableau, stock: initialDeal.stock }, moveLog, blame.at - 1);
+                                const pile = Sb && Sb.t[+colM[1] - 1];
+                                if (pile && pile.length) {
+                                    const tp = pile[pile.length - 1];
+                                    killDest = `onto the ${RANKS[tp.r - 1]}${tp.s}`;
+                                }
+                                else if (pile)
+                                    killDest = "into the empty column";
+                            }
+                        }
+                        catch (e) { }
+                        tips.unshift({
+                            move: blame.at, verified: true, principle: "Solver check",
+                            title: `The game died at move ${blame.at}`,
+                            detail: `Playing the ${killCard || "card"} here is what closed the door \u2014 sometimes the winning play is holding a card back. Right before it, the solver still wins:`,
+                            steps: blame.steps,
+                            ctx: killCard ? { kill: killCard, killDest: killDest || "" } : null,
+                            visual: null, saves: null,
+                        });
+                    }
+                    else if (blame && blame.wasDraw) {
+                        // a draw/recycle killed it: the mistake was passing on the waste offer
+                        let offer = null;
+                        try {
+                            const Sb = Doctrine.replayTo({ tableau: initialDeal.tableau, stock: initialDeal.stock }, moveLog, blame.at - 1);
+                            if (Sb && Sb.waste.length) {
+                                const w = Sb.waste[Sb.waste.length - 1];
+                                offer = RANKS[w.r - 1] + w.s;
+                            }
+                        }
+                        catch (e) { }
+                        tips.unshift({
+                            move: blame.at, verified: true, principle: "Solver check",
+                            title: `The game died at move ${blame.at} \u2014 on a draw`,
+                            detail: `Cycling on${offer ? ` past the ${offer}` : ""} is what closed the door \u2014 the pass math never brought the chance back. Right before drawing, the solver still wins:`,
+                            steps: blame.steps,
+                            ctx: offer ? { kill: offer, killDest: "" } : null,
+                            visual: null, saves: null,
+                        });
+                    }
+                    else if (lo >= 0) {
+                        // boundary couldn't be proven at deep budget — say so, never fabricate
+                        lastLine = [];
+                        const aliveAtLo = solvAt(lo, DEEP, lastLine) === true;
+                        tips.unshift({
+                            move: null, verified: true, principle: "Solver check",
+                            title: `The win slipped away after move ${lo}`,
+                            detail: aliveAtLo
+                                ? `The solver proves a win still existed at move ${lo} but can't pin the exact move that lost it \u2014 the positions after it are too deep to settle. From move ${lo}, one winning start:`
+                                : "The solver can't settle where this game was lost \u2014 the positions are deeper than its budget. No move is being blamed.",
+                            steps: aliveAtLo ? annotate(lastLine).slice(0, 4) : null,
+                            visual: null, saves: null,
+                        });
+                    }
+                    else {
+                        tips.unshift({
+                            move: null, verified: true, principle: "Solver check",
+                            title: "No escape found from the start",
+                            detail: "The solver finds no winning line even from the opening position within its budget \u2014 this one may have been lost to the shuffle, not to you.",
+                            steps: null, visual: null, saves: null,
+                        });
+                    }
                 }
             }
             data = {
@@ -19268,7 +19344,7 @@ Reply ONLY JSON, plain language for a phone:
         const compact = moveLog.slice(-80).map((m, i) => `${moveLog.length - Math.min(80, moveLog.length) + i + 1}. ${m}`).join("\n");
         return `You are the table-side Klondike coach inside a solitaire training app, chatting live with the player about their game. Be conversational, concise (under 120 words), plain-language, and name actual cards. Never use the words "tableau" or "stock" (say "the columns" and "the deck").
 
-DOCTRINE (one school; grade only on what the player could know): 1 Reveal First (flips are the only permanent progress; biggest pile first). 2 Safe Promotion (aces/2s always; rank N safe when both opposite-color N-1s are accounted for; never send a card up that others still need). 3 Space Economics (only kings take empty columns; pick king color by what it unblocks). 4 Smooth the Middle (in the 5-8 band, prefer landings where suits match two apart — only when a real choice exists). 5 Phase the Deck (draw-3 shows every 3rd card; pulls shift only the deck behind them; decline offers that buy nothing; dead passes repeat exactly; deck cards only have exits — never take a locked deck card's last landing). 6 No Free Moves.
+DOCTRINE (one school; grade only on what the player could know): 1 Reveal First (flips are the only permanent progress; biggest pile first). 2 Safe Promotion (FROM THE COLUMNS: aces/2s always; rank N safe when both opposite-color N-1s are accounted for; never send a card up that others still need. FROM THE DECK a promotion is a PULL first: it re-phases the deck, and even a "free" ace or 2 off the waste can lose a won game — never call a waste promotion safe without weighing the pull; when unsure, say the honest answer is "solver territory"). 3 Space Economics (only kings take empty columns; pick king color by what it unblocks). 4 Smooth the Middle (in the 5-8 band, prefer landings where suits match two apart — only when a real choice exists). 5 Phase the Deck (draw-3 shows every 3rd card; pulls shift only the deck behind them; decline offers that buy nothing; dead passes repeat exactly; deck cards only have exits — never take a locked deck card's last landing). 6 No Free Moves.
 
 RULES: verified findings and solver verdicts below are machine-proven — never contradict them. If asked something requiring computation you can't do (e.g. "would X also have won"), say so plainly and suggest the replay's live checker. Uncertainty is fine; invention is not.
 
@@ -19277,7 +19353,7 @@ Deal (columns bottom->top, last card was face-up): ${((initialDeal === null || i
 Deck (bottom->top): ${((initialDeal === null || initialDeal === void 0 ? void 0 : initialDeal.stock) || []).join(" ")}
 Result: ${won ? "WON" : "abandoned"} \u00b7 ${gameRef.current.moves} moves \u00b7 grade ${((_a = analysis === null || analysis === void 0 ? void 0 : analysis.data) === null || _a === void 0 ? void 0 : _a.grade) || "?"}
 VERIFIED FINDINGS: ${JSON.stringify(findings.map((t) => ({ move: t.move, principle: t.principle, title: t.title, detail: t.detail })))}
-${replayGuide ? `\nCURRENT: player is replaying from move ${replayGuide.at}; moves so far in this exploration:\n${compact}\nCurrent position:\n${describePosition()}\nLive solver verdict on this position: ${replayVerdict ? (replayVerdict.checking ? "checking" : replayVerdict.ok ? "still winnable" : "no win found") : "n/a"}` : `\nMOVE LOG (last 80):\n${compact}`}
+${replayGuide ? `\nCURRENT: player is replaying from move ${replayGuide.at}; moves so far in this exploration:\n${compact}\nCurrent position:\n${describePosition()}\nLive solver verdict on this position: ${replayVerdict ? (replayVerdict.checking ? "checking" : replayVerdict.ok === true ? "still winnable" : replayVerdict.ok === null ? "unknown (position too deep for the quick check)" : "provably lost") : "n/a"}` : `\nMOVE LOG (last 80):\n${compact}`}
 
 TOPIC the player opened chat about: ${topic}`;
     }
@@ -19763,7 +19839,7 @@ TOPIC the player opened chat about: ${topic}`;
                     "\u2014",
                     " every move is truth-checked",
                     " ",
-                    replayVerdict && (React.createElement("b", { style: { color: replayVerdict.checking ? "#e6dfc8" : replayVerdict.ok ? "#7fe0a7" : "#ff9d9d", whiteSpace: "nowrap" } }, replayVerdict.checking ? "checking\u2026" : replayVerdict.ok ? "\u2713 still winnable" : "\u2715 no win found \u2014 Undo?"))),
+                    replayVerdict && (React.createElement("b", { style: { color: replayVerdict.checking ? "#e6dfc8" : replayVerdict.ok === true ? "#7fe0a7" : replayVerdict.ok === null ? "#e6d27f" : "#ff9d9d", whiteSpace: "nowrap" } }, replayVerdict.checking ? "checking\u2026" : replayVerdict.ok === true ? "\u2713 still winnable" : replayVerdict.ok === null ? "? too deep to verify quickly" : "\u2715 provably lost from here \u2014 Undo?"))),
                 React.createElement("button", { onClick: () => setChat({ topic: "the current position being explored", msgs: [], busy: false, err: null }), style: { border: "none", background: "rgba(0,0,0,0.25)", color: "#fff", borderRadius: 14, width: 26, height: 26, cursor: "pointer", flexShrink: 0, fontSize: 13 } }, "\uD83D\uDCAC"),
                 reviewStash.current && (React.createElement("button", { onClick: backToPointers, style: {
                         border: "none", background: "#0f5230", color: "#fff", borderRadius: 16,
