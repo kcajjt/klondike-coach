@@ -17191,7 +17191,7 @@ const SUITS = ["♠", "♥", "♦", "♣"];
 const RED = { "♥": true, "♦": true };
 const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 const cardName = (c) => `${RANKS[c.rank - 1]}${c.suit}`;
-const BUILD = "v52";
+const BUILD = "v53";
 // ---------- Persistence adapter ----------
 // Replaces the Claude-artifact-only window.storage with plain localStorage.
 // Same async shape as the old API: get(key) -> { value } | null, set(key, value).
@@ -17537,8 +17537,8 @@ const Doctrine = (() => {
                     const idle = nonFound - idleTrack[card].w;
                     if (idle >= 6) {
                         counts.promo += 1;
-                        findings.push({ principle: 2, verified: true, move: idleTrack[card] + 1, title: `Send the ${card} to the foundation sooner`,
-                            detail: `The ${card} was completely safe from move ${idleTrack[card] + 1} — no card on the board could ever need it — yet it waited ${idle} moves. Safe cards go straight up.`,
+                        findings.push({ principle: 2, verified: true, move: idleTrack[card].at + 1, title: `Send the ${card} to the foundation sooner`,
+                            detail: `The ${card} was completely safe from move ${idleTrack[card].at + 1} — no card on the board could ever need it — yet it waited ${idle} moves. Safe cards go straight up.`,
                             cards: { suggestedCards: [card], suggestedTo: "foundation" },
                             ctx: { base: card.replace(/^(10|[2-9AJQK])/, (r) => RANKS[RANKS.indexOf(r) - 1] || "A") }, saves: 0 });
                     }
