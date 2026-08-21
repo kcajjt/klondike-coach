@@ -17191,7 +17191,7 @@ const SUITS = ["♠", "♥", "♦", "♣"];
 const RED = { "♥": true, "♦": true };
 const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 const cardName = (c) => `${RANKS[c.rank - 1]}${c.suit}`;
-const BUILD = "v50";
+const BUILD = "v51";
 // ---------- Persistence adapter ----------
 // Replaces the Claude-artifact-only window.storage with plain localStorage.
 // Same async shape as the old API: get(key) -> { value } | null, set(key, value).
@@ -18282,7 +18282,10 @@ const BigCard = ({ name, w = 52, ring, dim }) => {
     if (!c)
         return null;
     const h = Math.round(w * 1.4);
-    const court = c.rank > 10;
+    // parseMini's rank is display TEXT ("A".."K") — arithmetic on it blanked the
+    // corner and hid court art for A/J/Q/K in spotlights (fixed v51)
+    const rn = RANKS.indexOf(c.rank) + 1;
+    const court = rn > 10;
     return (React.createElement("div", { style: {
             width: w, height: h, background: "#f7f3e6", borderRadius: 7,
             border: ring ? `2.5px solid ${ring}` : "1px solid #c9c2ad",
@@ -18291,9 +18294,9 @@ const BigCard = ({ name, w = 52, ring, dim }) => {
             boxSizing: "border-box",
         } },
         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: `${w * 0.06}px ${w * 0.08}px 0` } },
-            React.createElement("span", { style: { fontFamily: "'Times New Roman', serif", fontWeight: 700, fontSize: w * 0.36, lineHeight: 1, color: RED_SUIT(c.suit) ? "#c8102e" : "#1c2951" } }, RANKS[c.rank - 1]),
+            React.createElement("span", { style: { fontFamily: "'Times New Roman', serif", fontWeight: 700, fontSize: w * 0.36, lineHeight: 1, color: RED_SUIT(c.suit) ? "#c8102e" : "#1c2951" } }, c.rank),
             React.createElement("span", { style: { fontSize: w * 0.3, lineHeight: 1.15, color: RED_SUIT(c.suit) ? "#c8102e" : "#1c2951" } }, c.suit)),
-        court ? (React.createElement("img", { src: CARD_ART[`${"JQK"[c.rank - 11]}${SUIT_CODE[c.suit]}`], draggable: false, style: { position: "absolute", left: "6%", right: "6%", bottom: "-2%", top: `${w * 0.52}px`, width: "88%", height: "auto", objectFit: "cover", objectPosition: "top", pointerEvents: "none", border: "1px solid #26356b", borderRadius: 3 } })) : (React.createElement("div", { style: { position: "absolute", bottom: w * 0.08, right: w * 0.1, fontSize: w * 0.5, color: RED_SUIT(c.suit) ? "#c8102e" : "#1c2951" } }, c.suit))));
+        court ? (React.createElement("img", { src: CARD_ART[`${"JQK"[rn - 11]}${SUIT_CODE[c.suit]}`], draggable: false, style: { position: "absolute", left: "6%", right: "6%", bottom: "-2%", top: `${w * 0.52}px`, width: "88%", height: "auto", objectFit: "cover", objectPosition: "top", pointerEvents: "none", border: "1px solid #26356b", borderRadius: 3 } })) : (React.createElement("div", { style: { position: "absolute", bottom: w * 0.08, right: w * 0.1, fontSize: w * 0.5, color: RED_SUIT(c.suit) ? "#c8102e" : "#1c2951" } }, c.suit))));
 };
 const SpotStack = ({ names, w = 52, markIdx, markColor }) => (React.createElement("div", { style: { position: "relative", width: w, height: Math.round(w * 1.4) + (names.length - 1) * Math.round(w * 0.42) } }, names.map((n, i) => (React.createElement("div", { key: i, style: { position: "absolute", top: i * Math.round(w * 0.42), left: 0 } },
     React.createElement(BigCard, { name: n, w: w, ring: i === markIdx ? markColor : null }))))));
@@ -19369,6 +19372,7 @@ TOPIC the player opened chat about: ${topic}`;
                 ...msgs.map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.text })),
             ];
             let reply = null;
+            let lastErr = null; // surfaced in the error line so failures self-diagnose
             for (let attempt = 0; attempt < 2 && reply === null; attempt++) {
                 if (attempt)
                     await new Promise((r) => setTimeout(r, 2000));
@@ -19384,14 +19388,18 @@ TOPIC the player opened chat about: ${topic}`;
                     const raw = await res.text();
                     const d = JSON.parse(raw);
                     if (d.error)
-                        throw new Error(d.error.message || "api");
+                        throw new Error(`${res.status} ${d.error.type || ""}: ${d.error.message || "api error"}`.trim());
                     const t = (d.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
                     reply = t || null; // a reasoning-only / cut-off response retries instead of posting an empty bubble
+                    if (reply === null)
+                        lastErr = "empty reply (reasoning consumed the budget)";
                 }
-                catch (e) { }
+                catch (e) {
+                    lastErr = String((e && e.message) || e).slice(0, 90);
+                }
             }
             const errMsg = getApiKey()
-                ? "Couldn't reach Claude \u2014 tap send to retry (check the key if it keeps failing)."
+                ? `Couldn't reach Claude \u2014 ${lastErr || "no response"}. Tap send to retry.`
                 : "Couldn't reach Claude \u2014 outside the Claude app this needs an API key. Tap \ud83d\udd11 above to add one.";
             if (reply === null)
                 setChat((c) => (c ? { ...c, busy: false, err: errMsg } : c));
@@ -19410,7 +19418,7 @@ TOPIC the player opened chat about: ${topic}`;
         }
         catch (e) {
             const errMsg2 = getApiKey()
-                ? "Couldn't reach Claude \u2014 tap send to retry (check the key if it keeps failing)."
+                ? `Couldn't reach Claude \u2014 ${String((e && e.message) || e).slice(0, 90)}. Tap send to retry.`
                 : "Couldn't reach Claude \u2014 outside the Claude app this needs an API key. Tap \ud83d\udd11 above to add one.";
             setChat((c) => (c ? { ...c, busy: false, err: errMsg2 } : c));
         }
@@ -20258,9 +20266,7 @@ TOPIC the player opened chat about: ${topic}`;
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(SolitaireCoach));
 </script>
 <script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => { navigator.serviceWorker.register("./sw.js").catch(() => {}); });
-}
+if ("serviceWorker" in navigator) { window.addEventListener("load", () => { navigator.serviceWorker.register("./sw.js").catch(() => {}); }); }
 </script>
 </body>
 </html>
