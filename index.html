@@ -17191,7 +17191,7 @@ const SUITS = ["♠", "♥", "♦", "♣"];
 const RED = { "♥": true, "♦": true };
 const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 const cardName = (c) => `${RANKS[c.rank - 1]}${c.suit}`;
-const BUILD = "v54";
+const BUILD = "v55";
 // ---------- Persistence adapter ----------
 // Replaces the Claude-artifact-only window.storage with plain localStorage.
 // Same async shape as the old API: get(key) -> { value } | null, set(key, value).
@@ -18492,11 +18492,13 @@ function SolitaireCoach() {
     const [apiKeyDraft, setApiKeyDraft] = useState("");
     // ---------- Training mode ----------
     const [train, setTrain] = useState(false);
-    const [cue, setCue] = useState(null); // {type, q, why, showWhy, proceed}
     const [tripwire, setTripwire] = useState(null); // {move, checking?, dead?}
+    const [flag, setFlag] = useState(null); // amber doctrine flag: {principle, detail, move}
     const [drillMenu, setDrillMenu] = useState(false);
     const tripChecked = useRef(0);
-    const cuedMoveRef = useRef(null); // {type, at} awaiting tripwire verdict
+    const flagsSeen = useRef(new Set()); // finding keys already shown this game
+    const trainFlags = useRef([]); // flag texts, fed to the live coach chat
+    const freeUndo = useRef(false); // suppress flagging the sanctioned take-back
     const trainStats = useRef((() => {
         try {
             const r = window.localStorage.getItem("kc-train-stats");
@@ -18504,7 +18506,7 @@ function SolitaireCoach() {
                 return JSON.parse(r);
         }
         catch (e) { }
-        return { king: 0, pull: 0, pass: 0, gradKing: false, gradPull: false, gradPass: false, deaths: 0 };
+        return { deaths: 0, flags: {} };
     })());
     const [doctrineOpen, setDoctrineOpen] = useState(null); // null | section key
     const [replayGuide, setReplayGuide] = useState(null); // { at, steps } while re-living a reviewed moment
@@ -18723,20 +18725,44 @@ function SolitaireCoach() {
         }, 80);
         return () => clearTimeout(t);
     }, [game, replayGuide, won]);
-    // Training tripwire: after every commitment move, prove-or-clear. Only a
-    // PROVEN death fires the banner (honest statistics); take-back is free.
+    // Training live coach (v55): after each move, (a) diff the doctrine analyzer's
+    // findings against what's been shown — a NEW finding flags immediately with
+    // the exact cards; (b) prove-or-clear the position — only a PROVEN death
+    // fires the red tripwire; take-back is free.
     useEffect(() => {
         if (!train || won)
             return;
         const n = moveLog.length;
         if (n === 0 || n <= tripChecked.current)
             return;
-        const last = moveLog[n - 1] || "";
-        if (last === "Undo" || last.startsWith("Drew") || last.startsWith("Recycled")) {
-            tripChecked.current = n;
-            return;
-        }
         tripChecked.current = n;
+        const last = moveLog[n - 1] || "";
+        const sanctioned = freeUndo.current;
+        freeUndo.current = false;
+        // (a) doctrine diff — cheap replay, every move (skip the sanctioned take-back)
+        if (!sanctioned) {
+            try {
+                const r = Doctrine.analyze({ tableau: initialDeal.tableau, stock: initialDeal.stock }, moveLog);
+                if (r && r.ok) {
+                    for (const fd of r.findings) {
+                        const key = fd.principle + "|" + fd.move + "|" + fd.title;
+                        if (!flagsSeen.current.has(key)) {
+                            flagsSeen.current.add(key);
+                            const txt = `${fd.principleName || fd.principle}: ${fd.title} \u2014 ${fd.detail}`;
+                            trainFlags.current.push(`(after move ${n}) ${txt}`);
+                            trainStats.current.flags[fd.principleName || fd.principle] = (trainStats.current.flags[fd.principleName || fd.principle] || 0) + 1;
+                            saveTrainStats();
+                            setFlag({ principle: fd.principleName || String(fd.principle), title: fd.title, detail: fd.detail, move: fd.move });
+                            break; // one flag at a time
+                        }
+                    }
+                }
+            }
+            catch (e) { }
+        }
+        // (b) tripwire on commitment moves only
+        if (last === "Undo" || last.startsWith("Drew") || last.startsWith("Recycled"))
+            return;
         setTripwire({ move: n, checking: true });
         const t = setTimeout(() => {
             try {
@@ -18748,26 +18774,14 @@ function SolitaireCoach() {
                 let v = isSolvable(g.tableau, g.stock, g.waste, fArr, 30000);
                 if (v !== true)
                     v = isSolvable(g.tableau, g.stock, g.waste, fArr, 800000);
-                const cm = cuedMoveRef.current;
                 if (v === false) {
                     setTripwire({ move: n, dead: true });
+                    trainFlags.current.push(`(after move ${n}) SOLVER: this move made the game provably unwinnable`);
                     trainStats.current.deaths += 1;
-                    if (cm && cm.at === n)
-                        trainStats.current[cm.type] = 0;
                     saveTrainStats();
                 }
-                else {
+                else
                     setTripwire(null);
-                    if (cm && cm.at === n) {
-                        const k = cm.type;
-                        trainStats.current[k] = (trainStats.current[k] || 0) + 1;
-                        if (trainStats.current[k] >= 10)
-                            trainStats.current["grad" + k[0].toUpperCase() + k.slice(1)] = true;
-                        saveTrainStats();
-                    }
-                }
-                if (cm && cm.at === n)
-                    cuedMoveRef.current = null;
             }
             catch (err) {
                 setTripwire(null);
@@ -18838,26 +18852,6 @@ function SolitaireCoach() {
     }
     // ---------- Moves ----------
     function drawCards() {
-        if (train && !trainStats.current.gradPass) {
-            const g = gameRef.current;
-            if (g.stock.length === 0 && g.waste.length > 0) {
-                let plays = 0;
-                for (let i = moveLog.length - 1; i >= 0; i--) {
-                    const l = moveLog[i];
-                    if (l.startsWith("Recycled"))
-                        break;
-                    if (!l.startsWith("Drew"))
-                        plays++;
-                }
-                if (plays === 0 && moveLog.length > 0) {
-                    setCue({ type: "pass",
-                        q: "Dead pass \u2014 recycling now repeats it exactly. Protocol: a skipped card that passes the covering test? A landing to build for a card you watched cycle?",
-                        why: "A pass with zero plays repeats itself. Re-phase with the earliest clean pull, build a landing for a cycler, or accept that it's over.",
-                        proceed: () => { cuedMoveRef.current = { type: "pass", at: moveLog.length + 1 }; drawCardsNow(); } });
-                    return;
-                }
-            }
-        }
         drawCardsNow();
     }
     function drawCardsNow() {
@@ -19445,12 +19439,12 @@ DOCTRINE (one school; grade only on what the player could know): 1 Reveal First 
 
 RULES: verified findings and solver verdicts below are machine-proven — never contradict them. If asked something requiring computation you can't do (e.g. "would X also have won"), say so plainly and suggest the replay's live checker. Uncertainty is fine; invention is not.
 
-GAME (finished, all information public):
+GAME (${train ? "TRAINING \u2014 IN PROGRESS, coach live at the table; the deal below is fully known to you \u2014 use it to teach, and when it matters, say what the player could NOT have known" : "finished, all information public"}):
 Deal (columns bottom->top, last card was face-up): ${((initialDeal === null || initialDeal === void 0 ? void 0 : initialDeal.tableau) || []).map((c, i) => `col${i + 1}: ${c.map((x) => x.name).join(" ")}`).join(" | ")}
 Deck (bottom->top): ${((initialDeal === null || initialDeal === void 0 ? void 0 : initialDeal.stock) || []).join(" ")}
 Result: ${won ? "WON" : "abandoned"} \u00b7 ${gameRef.current.moves} moves \u00b7 grade ${((_a = analysis === null || analysis === void 0 ? void 0 : analysis.data) === null || _a === void 0 ? void 0 : _a.grade) || "?"}
 VERIFIED FINDINGS: ${JSON.stringify(findings.map((t) => ({ move: t.move, principle: t.principle, title: t.title, detail: t.detail })))}
-${replayGuide ? `\nCURRENT: player is replaying from move ${replayGuide.at}; moves so far in this exploration:\n${compact}\nCurrent position:\n${describePosition()}\nLive solver verdict on this position: ${replayVerdict ? (replayVerdict.checking ? "checking" : replayVerdict.ok === true ? "still winnable" : replayVerdict.ok === null ? "unknown (position too deep for the quick check)" : "provably lost") : "n/a"}` : `\nMOVE LOG (last 80):\n${compact}`}
+${replayGuide ? `\nCURRENT: player is replaying from move ${replayGuide.at}; moves so far in this exploration:\n${compact}\nCurrent position:\n${describePosition()}\nLive solver verdict on this position: ${replayVerdict ? (replayVerdict.checking ? "checking" : replayVerdict.ok === true ? "still winnable" : replayVerdict.ok === null ? "unknown (position too deep for the quick check)" : "provably lost") : "n/a"}` : `\nMOVE LOG (last 80):\n${compact}${train ? `\nCURRENT POSITION:\n${describePosition()}\nLIVE FLAGS SHOWN SO FAR (machine-verified doctrine findings):\n${trainFlags.current.slice(-8).join("\n") || "none yet"}` : ""}`}
 
 TOPIC the player opened chat about: ${topic}`;
     }
@@ -19661,40 +19655,17 @@ TOPIC the player opened chat about: ${topic}`;
         }
         catch (e) { }
     }
-    // Pre-move checkpoint cues on the proven killer move types. The cue asks the
-    // question; the player answers it. Graduates (goes silent) at 10 clean.
-    function maybeCueThen(source) {
-        if (train && source.type === "waste") {
-            const g = gameRef.current;
-            const wTop = g.waste[g.waste.length - 1];
-            const st = trainStats.current;
-            if (wTop && wTop.rank === 13 && !st.gradKing) {
-                setCue({ type: "king",
-                    q: `King question: what does the ${cardName(wTop)} unblock that the other-color king wouldn't?`,
-                    why: "A king off the deck is a double commitment: the pull re-phases the deck, and the space it fills locks into one color ladder. Odd ranks wear the king's color \u2014 name your problem card first.",
-                    proceed: () => { cuedMoveRef.current = { type: "king", at: moveLog.length + 1 }; autoMove(source); } });
-                return;
-            }
-            if (wTop && canFoundation(wTop, g.foundations[SUITS.indexOf(wTop.suit)]) && !st.gradPull) {
-                setCue({ type: "pull",
-                    q: `Pull check: the ${cardName(wTop)} looks free \u2014 what shifts in the deck behind it if you take it?`,
-                    why: "A waste promotion is a pull first. It re-phases every card behind it \u2014 a safe deuce has lost a won game this way.",
-                    proceed: () => { cuedMoveRef.current = { type: "pull", at: moveLog.length + 1 }; autoMove(source); } });
-                return;
-            }
-        }
-        autoMove(source);
-    }
     function enterTraining() {
         setTrain(true);
         setDrillMenu(true);
     }
     function exitTraining() {
         setTrain(false);
-        setCue(null);
         setTripwire(null);
+        setFlag(null);
         setDrillMenu(false);
-        cuedMoveRef.current = null;
+        flagsSeen.current = new Set();
+        trainFlags.current = [];
     }
     function loadDrill(d) {
         try {
@@ -19731,6 +19702,16 @@ TOPIC the player opened chat about: ${topic}`;
             setSeconds(0);
             setStarted(true);
             tripChecked.current = d.m.length;
+            flagsSeen.current = new Set();
+            // seed with findings already present in the prefix so only NEW mistakes flag
+            try {
+                const pre = Doctrine.analyze({ tableau, stock }, d.m);
+                if (pre && pre.ok)
+                    pre.findings.forEach((fd) => flagsSeen.current.add(fd.principle + "|" + fd.move + "|" + fd.title));
+            }
+            catch (e) { }
+            trainFlags.current = [];
+            setFlag(null);
             dealtAt.current = Date.now();
             gameRef.current = ng;
             setGame(ng);
@@ -19832,7 +19813,7 @@ TOPIC the player opened chat about: ${topic}`;
         if (!ps)
             return;
         if (!ps.moved) {
-            maybeCueThen(ps.source);
+            autoMove(ps.source);
             return;
         }
         skipAnimIds.current = new Set(ps.cards.map((c) => c.id));
@@ -19978,7 +19959,8 @@ TOPIC the player opened chat about: ${topic}`;
                 React.createElement("div", { style: { display: "flex", gap: 8 } },
                     React.createElement("button", { style: btn, onClick: undo, disabled: !history.length }, "Undo"),
                     React.createElement("button", { style: btn, onClick: newGame }, "New"),
-                    React.createElement("button", { style: { ...btn, background: train ? "#d4af37" : btn.background, color: train ? "#0a3d23" : btn.color }, onClick: () => (train ? exitTraining() : enterTraining()) }, train ? "Exit training" : "Train"))),
+                    React.createElement("button", { style: { ...btn, background: train ? "#d4af37" : btn.background, color: train ? "#0a3d23" : btn.color }, onClick: () => (train ? exitTraining() : enterTraining()) }, train ? "Exit training" : "Train"),
+                    train && (React.createElement("button", { style: btn, onClick: () => setChat({ topic: "the training game in progress", msgs: [], busy: false, err: null }) }, "\uD83D\uDCAC")))),
             React.createElement("div", { style: {
                     display: "flex",
                     justifyContent: "space-between",
@@ -20395,17 +20377,23 @@ TOPIC the player opened chat about: ${topic}`;
             drag && (React.createElement("div", { style: { position: "fixed", left: drag.x, top: drag.y, zIndex: 2000, pointerEvents: "none" } }, drag.cards.map((c, i) => (React.createElement("div", { key: c.id, style: cardStyle(c, { top: i * OFF_UP, boxShadow: "0 6px 16px rgba(0,0,0,0.5)" }) },
                 React.createElement(CardFace, { c: c }))))))),
         doctrineOpen && React.createElement(DoctrinePanel, { target: doctrineOpen, onClose: () => setDoctrineOpen(null) }),
-        train && cue && (React.createElement("div", { style: { position: "fixed", inset: 0, zIndex: 4000, background: "rgba(6,30,17,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } },
-            React.createElement("div", { style: { background: "#f7f4e8", borderRadius: 14, padding: "16px 18px", maxWidth: 380, boxShadow: "0 8px 30px rgba(0,0,0,0.4)" } },
-                React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "#8a6d1a", letterSpacing: "0.06em", marginBottom: 6 } }, "TRAINING CHECKPOINT"),
-                React.createElement("div", { style: { fontSize: 14.5, lineHeight: 1.45, color: "#222", fontWeight: 600 } },
-                    React.createElement(RichText, { text: cue.q })),
-                cue.showWhy && React.createElement("p", { style: { fontSize: 13, lineHeight: 1.45, color: "#555", margin: "10px 0 0" } }, cue.why),
-                React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 14, justifyContent: "flex-end" } },
-                    React.createElement("button", { onClick: () => setCue(null), style: { border: "1px solid #ccc", background: "#fff", borderRadius: 10, padding: "8px 12px", fontSize: 13, cursor: "pointer", color: "#555" } }, "Hold off"),
-                    !cue.showWhy && React.createElement("button", { onClick: () => setCue({ ...cue, showWhy: true }), style: { border: "1px solid #ccc", background: "#fff", borderRadius: 10, padding: "8px 12px", fontSize: 13, cursor: "pointer", color: "#555" } }, "Why?"),
-                    React.createElement("button", { onClick: () => { const go = cue.proceed; setCue(null); go(); }, style: { border: "none", background: "#0f5230", color: "#fff", borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" } }, "Make the move"))))),
-        train && tripwire && !cue && (React.createElement("div", { style: { position: "fixed", left: 0, right: 0, bottom: 14, zIndex: 3900, display: "flex", justifyContent: "center", pointerEvents: "none" } },
+        train && flag && !tripwire && (React.createElement("div", { style: { position: "fixed", left: 0, right: 0, bottom: 14, zIndex: 3890, display: "flex", justifyContent: "center", pointerEvents: "none" } },
+            React.createElement("div", { style: { pointerEvents: "auto", background: "#6b5416", color: "#f7f0d8", borderRadius: 12, padding: "10px 14px", fontSize: 13, boxShadow: "0 4px 18px rgba(0,0,0,0.4)", maxWidth: 440 } },
+                React.createElement("div", { style: { fontWeight: 700, marginBottom: 3 } },
+                    "\u2013",
+                    " ",
+                    flag.principle,
+                    ": ",
+                    flag.title),
+                React.createElement("div", { style: { opacity: 0.9, lineHeight: 1.4, marginBottom: 8 } },
+                    React.createElement(RichText, { text: flag.detail })),
+                React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" } },
+                    React.createElement("button", { onClick: () => { setFlag(null); freeUndo.current = true; undo(); }, style: { border: "none", background: "#d4af37", color: "#0a3d23", borderRadius: 9, padding: "6px 10px", fontSize: 12.5, fontWeight: 700, cursor: "pointer" } }, "Take it back"),
+                    React.createElement("button", { onClick: () => { const tpc = `${flag.principle}: ${flag.title} \u2014 ${flag.detail}`; setFlag(null); setChat({ topic: tpc, msgs: [], busy: false, err: null }); }, style: { border: "1px solid rgba(255,255,255,0.4)", background: "none", color: "#f7f0d8", borderRadius: 9, padding: "6px 10px", fontSize: 12.5, cursor: "pointer" } },
+                        "\uD83D\uDCAC",
+                        " Ask coach"),
+                    React.createElement("button", { onClick: () => setFlag(null), style: { border: "1px solid rgba(255,255,255,0.4)", background: "none", color: "#f7f0d8", borderRadius: 9, padding: "6px 10px", fontSize: 12.5, cursor: "pointer" } }, "Keep going"))))),
+        train && tripwire && (React.createElement("div", { style: { position: "fixed", left: 0, right: 0, bottom: 14, zIndex: 3900, display: "flex", justifyContent: "center", pointerEvents: "none" } },
             React.createElement("div", { style: { pointerEvents: "auto", background: tripwire.dead ? "#5c1a1a" : "rgba(10,61,35,0.92)", color: "#f2ecd8", borderRadius: 12, padding: "10px 14px", fontSize: 13.5, display: "flex", gap: 10, alignItems: "center", boxShadow: "0 4px 18px rgba(0,0,0,0.4)", maxWidth: 420 } }, tripwire.checking ? (React.createElement("span", null,
                 "checking that move",
                 "\u2026")) : (React.createElement(React.Fragment, null,
@@ -20414,7 +20402,7 @@ TOPIC the player opened chat about: ${topic}`;
                     " That move closed the door ",
                     "\u2014",
                     " provably dead from here."),
-                React.createElement("button", { onClick: () => { setTripwire(null); undo(); }, style: { border: "none", background: "#d4af37", color: "#0a3d23", borderRadius: 9, padding: "7px 11px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" } }, "Take it back"),
+                React.createElement("button", { onClick: () => { setTripwire(null); freeUndo.current = true; undo(); }, style: { border: "none", background: "#d4af37", color: "#0a3d23", borderRadius: 9, padding: "7px 11px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" } }, "Take it back"),
                 React.createElement("button", { onClick: () => setTripwire(null), style: { border: "1px solid rgba(255,255,255,0.4)", background: "none", color: "#f2ecd8", borderRadius: 9, padding: "7px 10px", fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" } }, "Play on")))))),
         train && drillMenu && (React.createElement("div", { style: { position: "fixed", inset: 0, zIndex: 4100, background: "rgba(6,30,17,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }, onClick: (e) => { if (e.target === e.currentTarget)
                 setDrillMenu(false); } },
