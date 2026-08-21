@@ -17191,7 +17191,7 @@ const SUITS = ["♠", "♥", "♦", "♣"];
 const RED = { "♥": true, "♦": true };
 const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 const cardName = (c) => `${RANKS[c.rank - 1]}${c.suit}`;
-const BUILD = "v51";
+const BUILD = "v52";
 // ---------- Persistence adapter ----------
 // Replaces the Claude-artifact-only window.storage with plain localStorage.
 // Same async shape as the old API: get(key) -> { value } | null, set(key, value).
@@ -19064,7 +19064,7 @@ function SolitaireCoach() {
                     tips.unshift({
                         move: moveLog.length + 1, verified: true, principle: "Solver check",
                         title: "You weren't stuck \u2014 solver-verified",
-                        detail: "A win still existed from the position where you stopped. Step back in and find it your way \u2014 while replaying, every move you make gets a live \u2713/\u2715 telling you whether the win is still alive.",
+                        detail: `A win still existed from the position where you stopped \u2014 the path the solver found runs ${line.length} moves (${line.filter((x) => x === "draw" || x === "recycle").length} of them draws/recycles; a shorter one may exist). Step back in and find it your way \u2014 while replaying, every move you make gets a live \u2713/\u2715 telling you whether the win is still alive.`,
                         steps: null, visual: null, saves: null,
                     });
                 }
